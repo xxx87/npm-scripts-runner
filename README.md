@@ -17,6 +17,12 @@ Visual Studio Code extension to easily discover and run npm scripts from your pr
 - Click "Run" next to any script to execute it in the terminal
 - Toggle "Shared Terminal" to decide whether to use a single terminal for all scripts or separate terminals
 
+## Demo
+
+![NPM Scripts Runner in action](images/demo-1.gif)
+![NPM Scripts Runner in action](images/demo-2.gif)
+
+
 ## Requirements
 
 - VS Code version 1.60.0 or higher
@@ -25,4 +31,8 @@ Visual Studio Code extension to easily discover and run npm scripts from your pr
 
 This extension contributes the following commands:
 
-* `npm-scripts-runner.showScripts`: Show the NPM Scripts Runner panel
+- `npm-scripts-runner.showScripts`: Show the NPM Scripts Runner panel
+
+##
+
+<a href="https://ko-fi.com/isayevilya"><img src="https://storage.ko-fi.com/cdn/kofi2.png?v=3" width="150" alt="Support me on Ko-fi"/></a>
