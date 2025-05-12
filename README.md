@@ -42,6 +42,6 @@ None at the moment.
 
 ## Release Notes
 
-### 0.1.0
+### 1.0.0
 
 Initial release of NPM Scripts Runner

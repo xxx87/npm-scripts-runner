@@ -14,13 +14,14 @@
   "author": {
     "name": "xxx87"
   },
+  "publisher": "xxx87",
   "icon": "images/icon.png",
   "galleryBanner": {
     "color": "#C80000",
     "theme": "dark"
   },
   "engines": {
-    "vscode": "^1.100.0"
+    "vscode": "^1.60.0"
   },
   "categories": [
     "Other"
@@ -32,7 +33,9 @@
     "package.json",
     "terminal"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./extension.js",
   "contributes": {
     "commands": [
@@ -51,7 +54,7 @@
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.15.17",
-    "@types/vscode": "^1.100.0",
+    "@types/vscode": "^1.60.0",
     "eslint": "^9.26.0",
     "glob": "^11.0.2",
     "mocha": "^11.2.2",
