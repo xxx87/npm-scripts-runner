@@ -46,9 +46,7 @@
     ]
   },
   "scripts": {
-    "lint": "eslint .",
-    "pretest": "npm run lint",
-    "test": "node ./test/runTest.js"
+    "build": "vsce package"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
