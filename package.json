@@ -1,0 +1,42 @@
+{
+  "name": "npm-scripts-runner",
+  "displayName": "NPM Scripts Runner",
+  "description": "Run npm scripts from package.json with a click of a button",
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/npm-scripts-runner.git"
+  },
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "npm-scripts-runner.showScripts",
+        "title": "Show NPM Scripts Runner"
+      }
+    ]
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "node ./test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.15.17",
+    "@types/vscode": "^1.100.0",
+    "eslint": "^9.26.0",
+    "glob": "^11.0.2",
+    "mocha": "^11.2.2",
+    "typescript": "^5.8.3",
+    "vscode-test": "^1.6.1"
+  }
+}
