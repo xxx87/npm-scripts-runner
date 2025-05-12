@@ -1,0 +1,11 @@
+.vscode/**
+.gitignore
+.git/**
+node_modules/**
+test/**
+src/**
+**/tsconfig.json
+**/tslint.json
+**/*.map
+**/*.ts
+.eslintrc.json

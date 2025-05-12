@@ -5,13 +5,32 @@
   "version": "1.0.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/npm-scripts-runner.git"
+    "url": "https://github.com/xxx87/npm-scripts-runner.git"
+  },
+  "homepage": "https://github.com/xxx87/npm-scripts-runner/blob/master/README.md",
+  "bugs": {
+    "url": "https://github.com/xxx87/npm-scripts-runner/issues"
+  },
+  "author": {
+    "name": "xxx87"
+  },
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#C80000",
+    "theme": "dark"
   },
   "engines": {
     "vscode": "^1.100.0"
   },
   "categories": [
     "Other"
+  ],
+  "keywords": [
+    "npm",
+    "scripts",
+    "runner",
+    "package.json",
+    "terminal"
   ],
   "activationEvents": [],
   "main": "./extension.js",
