@@ -1,12 +1,30 @@
 const vscode = require("vscode");
 const fs = require("fs");
 const path = require("path");
+const { glob } = require("glob");
 
 /**
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
   console.log("NPM Scripts Runner is now active!");
+
+  // Create status bar item
+  const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+  statusBarItem.text = "$(play) NPM Scripts";
+  statusBarItem.command = "npm-scripts-runner.showScripts";
+  statusBarItem.tooltip = "Show NPM Scripts Runner";
+
+  // Check if package.json exists and show the button
+  updateStatusBarVisibility(statusBarItem);
+
+  // Update visibility when files change
+  const watcher = vscode.workspace.createFileSystemWatcher("**/package.json");
+  watcher.onDidCreate(() => updateStatusBarVisibility(statusBarItem));
+  watcher.onDidDelete(() => updateStatusBarVisibility(statusBarItem));
+
+  // Update visibility when workspace folders change
+  vscode.workspace.onDidChangeWorkspaceFolders(() => updateStatusBarVisibility(statusBarItem));
 
   // Register the command to show npm scripts
   const disposable = vscode.commands.registerCommand("npm-scripts-runner.showScripts", () => {
@@ -22,7 +40,7 @@ function activate(context) {
       (message) => {
         switch (message.command) {
           case "runScript":
-            runNpmScript(message.script, message.useSharedTerminal);
+            runNpmScript(message.script, message.packagePath, message.useSharedTerminal);
             return;
           case "refresh":
             updateWebview(panel);
@@ -37,24 +55,29 @@ function activate(context) {
     );
 
     // Update the webview when package.json changes
-    const watcher = vscode.workspace.createFileSystemWatcher("**/package.json");
-    watcher.onDidChange(() => updateWebview(panel));
-    watcher.onDidCreate(() => updateWebview(panel));
-    watcher.onDidDelete(() => updateWebview(panel));
+    const scriptWatcher = vscode.workspace.createFileSystemWatcher("**/package.json");
+    scriptWatcher.onDidChange(() => updateWebview(panel));
+    scriptWatcher.onDidCreate(() => updateWebview(panel));
+    scriptWatcher.onDidDelete(() => updateWebview(panel));
 
-    context.subscriptions.push(watcher);
+    context.subscriptions.push(scriptWatcher);
   });
 
-  context.subscriptions.push(disposable);
+  context.subscriptions.push(statusBarItem, watcher, disposable);
+}
 
-  // Create status bar item
-  const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-  statusBarItem.text = "$(play) NPM Scripts";
-  statusBarItem.command = "npm-scripts-runner.showScripts";
-  statusBarItem.tooltip = "Show NPM Scripts Runner";
-  statusBarItem.show();
-
-  context.subscriptions.push(statusBarItem);
+/**
+ * Update status bar visibility based on whether package.json exists
+ * @param {vscode.StatusBarItem} statusBarItem
+ */
+function updateStatusBarVisibility(statusBarItem) {
+  findAllPackageJsonFiles().then((packageFiles) => {
+    if (packageFiles.length > 0) {
+      statusBarItem.show();
+    } else {
+      statusBarItem.hide();
+    }
+  });
 }
 
 /**
@@ -62,42 +85,88 @@ function activate(context) {
  * @param {vscode.WebviewPanel} panel
  */
 function updateWebview(panel) {
-  const scripts = getNpmScripts();
-  panel.webview.html = getWebviewContent(scripts, panel.webview);
+  findAllPackageJsonFiles().then((packageFiles) => {
+    const packageScripts = getAllNpmScripts(packageFiles);
+    panel.webview.html = getWebviewContent(packageScripts, panel.webview);
+  });
 }
 
 /**
- * Get npm scripts from package.json
- * @returns {Object} scripts
+ * Find all package.json files in the workspace
+ * @returns {Promise<string[]>} Array of absolute paths to package.json files
  */
-function getNpmScripts() {
+async function findAllPackageJsonFiles() {
   const workspaceFolders = vscode.workspace.workspaceFolders;
   if (!workspaceFolders) {
-    return {};
+    return [];
   }
 
-  const rootPath = workspaceFolders[0].uri.fsPath;
-  const packageJsonPath = path.join(rootPath, "package.json");
+  const packageFiles = [];
 
-  try {
-    if (fs.existsSync(packageJsonPath)) {
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-      return packageJson.scripts || {};
+  for (const folder of workspaceFolders) {
+    const rootPath = folder.uri.fsPath;
+
+    // Use glob to find all package.json files, excluding node_modules
+    const pattern = path.join(rootPath, "**/package.json");
+    const ignore = path.join(rootPath, "**/node_modules/**");
+
+    try {
+      const files = await glob(pattern, { ignore });
+      packageFiles.push(...files);
+    } catch (error) {
+      console.error(`Error finding package.json files: ${error.message}`);
     }
-  } catch (error) {
-    vscode.window.showErrorMessage(`Error reading package.json: ${error.message}`);
   }
 
-  return {};
+  return packageFiles;
+}
+
+/**
+ * Get npm scripts from all package.json files
+ * @param {string[]} packageFiles Array of paths to package.json files
+ * @returns {Object} Object with package paths as keys and scripts as values
+ */
+function getAllNpmScripts(packageFiles) {
+  const allScripts = {};
+
+  for (const packageFile of packageFiles) {
+    try {
+      if (fs.existsSync(packageFile)) {
+        const packageJson = JSON.parse(fs.readFileSync(packageFile, "utf8"));
+        const scripts = packageJson.scripts || {};
+
+        // Get relative path from workspace root
+        const workspaceFolder = vscode.workspace.workspaceFolders[0].uri.fsPath;
+        let relativePath = path.relative(workspaceFolder, path.dirname(packageFile));
+
+        // Use '/' for root package.json
+        if (!relativePath) {
+          relativePath = "/";
+        }
+
+        // Store scripts with their package path
+        allScripts[relativePath] = {
+          scripts,
+          packageName: packageJson.name || path.basename(path.dirname(packageFile)),
+          absolutePath: packageFile
+        };
+      }
+    } catch (error) {
+      console.error(`Error reading ${packageFile}: ${error.message}`);
+    }
+  }
+
+  return allScripts;
 }
 
 /**
  * Get or create terminal based on settings
  * @param {string} scriptName
+ * @param {string} packagePath
  * @param {boolean} useSharedTerminal
  * @returns {vscode.Terminal}
  */
-function getTerminal(scriptName, useSharedTerminal) {
+function getTerminal(scriptName, packagePath, useSharedTerminal) {
   if (useSharedTerminal) {
     // Use a shared terminal or create one if it doesn't exist
     const terminalName = "NPM Scripts Runner";
@@ -108,29 +177,49 @@ function getTerminal(scriptName, useSharedTerminal) {
     return terminal;
   } else {
     // Create a new terminal for this script
-    return vscode.window.createTerminal(`npm: ${scriptName}`);
+    const packageName = path.basename(path.dirname(packagePath));
+    return vscode.window.createTerminal(`npm: ${packageName} - ${scriptName}`);
   }
 }
 
 /**
  * Run an npm script
  * @param {string} scriptName
+ * @param {string} packagePath
  * @param {boolean} useSharedTerminal
  */
-function runNpmScript(scriptName, useSharedTerminal) {
-  const terminal = getTerminal(scriptName, useSharedTerminal);
+function runNpmScript(scriptName, packagePath, useSharedTerminal) {
+  const terminal = getTerminal(scriptName, packagePath, useSharedTerminal);
+
+  // Change to the directory containing package.json
+  const packageDir = path.dirname(packagePath);
+
+  // Use different commands for Windows vs Unix-like systems
+  const isWindows = process.platform === "win32";
+
+  if (isWindows) {
+    terminal.sendText(`cd "${packageDir}"`);
+  } else {
+    terminal.sendText(`cd "${packageDir.replace(/"/g, '\\"')}"`);
+  }
+
   terminal.sendText(`npm run ${scriptName}`);
   terminal.show();
 }
 
 /**
  * Generate the webview HTML content
- * @param {Object} scripts
+ * @param {Object} packageScripts
  * @param {vscode.Webview} webview
  * @returns {string} HTML content
  */
-function getWebviewContent(scripts, webview) {
-  const scriptEntries = Object.entries(scripts);
+function getWebviewContent(packageScripts, webview) {
+  const packagePaths = Object.keys(packageScripts).sort((a, b) => {
+    // Sort root package first, then alphabetically
+    if (a === "/") return -1;
+    if (b === "/") return 1;
+    return a.localeCompare(b);
+  });
 
   return `<!DOCTYPE html>
   <html lang="en">
@@ -206,19 +295,42 @@ function getWebviewContent(scripts, webview) {
       .toggle-label {
         font-size: 0.9em;
       }
+      .package-group {
+        margin-bottom: 30px;
+        border: 1px solid var(--vscode-panel-border);
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .package-header {
+        background-color: var(--vscode-sideBar-background);
+        padding: 10px 15px;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+      }
+      .package-name {
+        font-size: 1.1em;
+      }
+      .package-path {
+        font-size: 0.9em;
+        opacity: 0.8;
+        margin-left: 10px;
+      }
       .script-list {
         display: flex;
         flex-direction: column;
-        gap: 10px;
       }
       .script-item {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 10px;
-        background-color: var(--vscode-editor-background);
-        border: 1px solid var(--vscode-panel-border);
-        border-radius: 4px;
+        padding: 10px 15px;
+        border-top: 1px solid var(--vscode-panel-border);
+      }
+      .script-item:hover {
+        background-color: var(--vscode-list-hoverBackground);
       }
       .script-name {
         font-weight: bold;
@@ -256,6 +368,20 @@ function getWebviewContent(scripts, webview) {
         padding: 40px;
         color: var(--vscode-disabledForeground);
       }
+      .collapse-icon {
+        transition: transform 0.3s;
+      }
+      .collapsed .collapse-icon {
+        transform: rotate(-90deg);
+      }
+      .package-content {
+        max-height: 1000px;
+        transition: max-height 0.3s ease-in-out;
+        overflow: hidden;
+      }
+      .collapsed .package-content {
+        max-height: 0;
+      }
     </style>
   </head>
   <body>
@@ -274,45 +400,67 @@ function getWebviewContent(scripts, webview) {
     </div>
 
     ${
-      scriptEntries.length > 0
-        ? `
-      <div class="script-list">
-        ${scriptEntries
-          .map(
-            ([name, command]) => `
-          <div class="script-item">
-            <div>
-              <span class="script-name">${name}</span>
-              <span class="script-command">${command}</span>
-            </div>
-            <button class="run-button" data-script="${name}">Run</button>
+      packagePaths.length > 0
+        ? packagePaths
+            .map((packagePath) => {
+              const packageData = packageScripts[packagePath];
+              const scriptEntries = Object.entries(packageData.scripts);
+
+              if (scriptEntries.length === 0) return "";
+
+              return `
+              <div class="package-group" data-path="${packageData.absolutePath}">
+                <div class="package-header">
+                  <div>
+                    <span class="package-name">${packageData.packageName}</span>
+                    <span class="package-path">${packagePath === "/" ? "(root)" : packagePath}</span>
+                  </div>
+                  <span class="collapse-icon">▼</span>
+                </div>
+                <div class="package-content">
+                  <div class="script-list">
+                    ${scriptEntries
+                      .map(
+                        ([name, command]) => `
+                      <div class="script-item">
+                        <div>
+                          <span class="script-name">${name}</span>
+                          <span class="script-command">${command}</span>
+                        </div>
+                        <button class="run-button" data-script="${name}" data-package="${packageData.absolutePath}">Run</button>
+                      </div>
+                    `
+                      )
+                      .join("")}
+                  </div>
+                </div>
+              </div>
+            `;
+            })
+            .join("")
+        : `
+          <div class="empty-state">
+            <p>No scripts found in any package.json files</p>
           </div>
         `
-          )
-          .join("")}
-      </div>
-    `
-        : `
-      <div class="empty-state">
-        <p>No scripts found in package.json</p>
-      </div>
-    `
     }
 
     <script>
       (function() {
         const vscode = acquireVsCodeApi();
 
-        // Initialize toggle state (could be loaded from saved state)
+        // Initialize toggle state
         const terminalToggle = document.getElementById('terminalToggle');
 
         // Add event listeners to run buttons
         document.querySelectorAll('.run-button').forEach(button => {
           button.addEventListener('click', () => {
             const script = button.getAttribute('data-script');
+            const packagePath = button.getAttribute('data-package');
             vscode.postMessage({
               command: 'runScript',
               script: script,
+              packagePath: packagePath,
               useSharedTerminal: terminalToggle.checked
             });
           });
@@ -330,6 +478,14 @@ function getWebviewContent(scripts, webview) {
           vscode.postMessage({
             command: 'saveSettings',
             useSharedTerminal: terminalToggle.checked
+          });
+        });
+
+        // Add event listeners to package headers for collapsing
+        document.querySelectorAll('.package-header').forEach(header => {
+          header.addEventListener('click', () => {
+            const packageGroup = header.parentElement;
+            packageGroup.classList.toggle('collapsed');
           });
         });
       })();

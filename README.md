@@ -39,9 +39,3 @@ You can toggle between these modes using the "Shared Terminal" switch in the NPM
 ## Known Issues
 
 None at the moment.
-
-## Release Notes
-
-### 1.0.0
-
-Initial release of NPM Scripts Runner
