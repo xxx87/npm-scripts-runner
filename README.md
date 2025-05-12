@@ -1,41 +1,28 @@
 # NPM Scripts Runner
 
-A VS Code extension that makes it easy to run npm scripts from your package.json file with a simple click of a button.
+Visual Studio Code extension to easily discover and run npm scripts from your project's package.json files.
 
 ## Features
 
-- Displays all npm scripts from your package.json file as clickable buttons
-- Shows the actual command that will be executed
-- Automatically refreshes when package.json changes
-- Runs scripts in a dedicated terminal
-- Accessible from the status bar
-- Option to run scripts in a shared terminal or in separate terminals for each script
+- Shows a button in the status bar for quick access
+- Lists all npm scripts from all package.json files in your workspace
+- Provides a clean interface to view and run scripts
+- Allows running scripts in shared or individual terminals
+- Auto-refreshes when package.json files change
 
 ## Usage
 
-1. Click on the "NPM Scripts" button in the status bar or run the "Show NPM Scripts Runner" command from the command palette
-2. A panel will open showing all available npm scripts
-3. Click the "Run" button next to any script to execute it
-4. The script will run in a dedicated terminal
+- Click on the "NPM Scripts" button in the status bar or run the command "Show NPM Scripts Runner"
+- A panel will open showing all available npm scripts
+- Click "Run" next to any script to execute it in the terminal
+- Toggle "Shared Terminal" to decide whether to use a single terminal for all scripts or separate terminals
 
 ## Requirements
 
-- VS Code 1.60.0 or higher
-- A project with a package.json file containing scripts
+- VS Code version 1.60.0 or higher
 
 ## Extension Settings
 
-This extension does not contribute any settings yet.
+This extension contributes the following commands:
 
-## Terminal Options
-
-The extension provides two modes for running scripts:
-
-- **Separate Terminals**: Each script runs in its own dedicated terminal (default)
-- **Shared Terminal**: All scripts run in a single shared terminal
-
-You can toggle between these modes using the "Shared Terminal" switch in the NPM Scripts Runner panel.
-
-## Known Issues
-
-None at the moment.
+* `npm-scripts-runner.showScripts`: Show the NPM Scripts Runner panel
