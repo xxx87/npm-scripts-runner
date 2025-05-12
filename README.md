@@ -1,6 +1,6 @@
 # NPM Scripts Runner
 
-Visual Studio Code extension to easily discover and run npm scripts from your project's package.json files.
+Visual Studio Code (CursorAI) **[extension](https://marketplace.visualstudio.com/items?itemName=xxx87.npm-scripts-runner)** to easily discover and run npm scripts from your project's package.json files.
 
 ## Features
 
@@ -21,7 +21,6 @@ Visual Studio Code extension to easily discover and run npm scripts from your pr
 
 ![NPM Scripts Runner in action](images/demo-1.gif)
 ![NPM Scripts Runner in action](images/demo-2.gif)
-
 
 ## Requirements
 

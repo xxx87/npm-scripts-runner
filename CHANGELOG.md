@@ -2,6 +2,13 @@
 
 All notable changes to the "NPM Scripts Runner" extension will be documented in this file.
 
+## [1.0.4] - 2025-05-12
+
+- Updated theme color to rebeccapurple (#663399)
+- Added extension link to marketplace in README.md
+- Improved layout of demo GIFs
+- Fixed minor styling issues
+
 ## [1.0.3] - 2025-05-12
 
 - Added animated GIF demonstrations to README.md
