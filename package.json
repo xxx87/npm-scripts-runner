@@ -2,7 +2,7 @@
   "name": "npm-scripts-runner",
   "displayName": "NPM Scripts Runner",
   "description": "Run npm scripts from package.json with a click of a button",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "repository": {
     "type": "git",
     "url": "https://github.com/xxx87/npm-scripts-runner.git"
